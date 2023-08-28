@@ -1,0 +1,99 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {},
+    "variables": {},
+    "resources": [
+      {
+        "type": "Microsoft.Resources/resourceGroups",
+        "apiVersion": "2021-04-01",
+        "name": "testenfolie",
+        "location": "West Europe",
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.Network/virtualNetworks",
+        "apiVersion": "2021-02-01",
+        "name": "example-network",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": ["10.0.0.0/16"]
+          }
+        },
+        "resources": [
+          {
+            "type": "subnets",
+            "apiVersion": "2021-02-01",
+            "name": "example-subnet",
+            "properties": {
+              "addressPrefix": "10.0.1.0/24"
+            }
+          }
+        ]
+      },
+      {
+        "type": "Microsoft.Compute/virtualMachines",
+        "apiVersion": "2022-03-01",
+        "name": "free-vm",
+        "location": "[resourceGroup().location]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Network/networkInterfaces', 'example-nic')]"
+        ],
+        "properties": {
+          "hardwareProfile": {
+            "vmSize": "Standard_DS2_v3"
+          },
+          "osProfile": {
+            "computerName": "example-vm",
+            "adminUsername": "adminuser",
+            "linuxConfiguration": {
+              "disablePasswordAuthentication": true
+            }
+          },
+          "storageProfile": {
+            "osDisk": {
+              "createOption": "FromImage",
+              "osType": "Linux",
+              "caching": "ReadWrite",
+              "name": "example-osdisk"
+            },
+            "imageReference": {
+              "publisher": "Canonical",
+              "offer": "UbuntuServer",
+              "sku": "22.04-LTS",
+              "version": "latest"
+            }
+          },
+          "networkProfile": {
+            "networkInterfaces": [
+              {
+                "id": "[resourceId('Microsoft.Network/networkInterfaces', 'example-nic')]"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "Microsoft.Network/networkInterfaces",
+        "apiVersion": "2021-02-01",
+        "name": "example-nic",
+        "location": "[resourceGroup().location]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'example-network', 'example-subnet')]"
+        ],
+        "properties": {
+          "ipConfigurations": [
+            {
+              "name": "example-config",
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              },
+              "privateIPAllocationMethod": "Dynamic"
+            }
+          ]
+        }
+      }
+    ]
+  }
+  
